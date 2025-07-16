@@ -28,6 +28,7 @@ import os
 import logging
 from decimal import Decimal
 from unittest import TestCase
+from urllib.parse import quote_plus
 from service import app
 from service.common import status
 from service.models import db, init_db, Product
@@ -228,6 +229,44 @@ class TestProductRoutes(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(len(data), 5)
+    
+    def test_query_by_name(self):
+        """It should Query Products by name"""
+        products = self._create_products(5)
+        test_name = products[0].name
+        name_count = len([product for product in products if product.name == test_name])
+        response = self.client.get(BASE_URL, query_string=f"name={quote_plus(test_name)}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), name_count)
+        # check that each product's name matches test_name
+        for product in data:
+            self.assertEqual(product["name"], test_name)
+    
+    def test_query_by_category(self):
+        """It should Query Products by category"""
+        products = self._create_products(5)
+        test_category = products[0].category
+        category_count = len([product for product in products if product.category == test_category])
+        response = self.client.get(BASE_URL, query_string=f"category={test_category.name}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), category_count)
+        # check that each product's category matches test_category.name
+        for product in data:
+            self.assertEqual(product["category"], test_category.name)
+    
+    def test_query_by_availability(self):
+        """It should Query Products by availability"""
+        products = self._create_products(5)
+        available_count = len([product for product in products if product.available is True])
+        response = self.client.get(BASE_URL, query_string=f"available=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), available_count)
+        # check that each product's availability matches True
+        for product in data:
+            self.assertEqual(product["available"], True)
 
     ######################################################################
     # Utility functions
